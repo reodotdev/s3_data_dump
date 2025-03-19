@@ -2,23 +2,10 @@ import json
 import time
 import s3_dump
 from datetime import datetime, timedelta
+from slack_sdk import WebClient
 
 
-input_js = {
-    "95509b6aa5bd95a": [
-        {
-            "data": "product_usage",
-            "frequency": "daily",
-            "last_sync_at": "2025-03-17",
-            "storage_type": "s3",
-            "storage_api_keys": {
-                "aws_secret": "",
-                "aws_access_key": ""
-            },
-            "bucket_name": "reodev-telemetry-data"
-        }
-    ]
-}
+input_js = json.loads("input_js.json")
 
 def check_to_sync(dt, frequency):
     timedeltas = {
@@ -55,6 +42,7 @@ def seconds_until_next_day():
 
 
 while True:
+    message = ""
     for tenant, sync_dets in input_js.items():
         for idx, sync_det in enumerate(sync_dets):
             last_sync_dt = datetime.strptime("1980-01-01", "%Y-%m-%d") if sync_det["last_sync_at"] is None else datetime.strptime(sync_det["last_sync_at"], "%Y-%m-%d")
@@ -67,6 +55,7 @@ while True:
                     **sync_det["storage_api_keys"]
                 )
                 input_js[tenant][idx]["last_sync_at"] = (datetime.now()-timedelta(days=1)).strftime("%Y-%m-%d")
+                message+=f"Ran sync for {tenant}. {sync_det['data']} data was exported to their {sync_det['storage_type']} \n"
 
     with open("input_js.json", "w+") as f:
         f.write(json.dumps(input_js))
