@@ -36,10 +36,9 @@ def fetch_product_usage(
     data_len = data_len_df["tc"].to_list()[0]
     print(f"extraction length: {data_len}")
     activities_data = None
-    if data_len > chunksize:
-        activities_data = process_chunked_query(
-            db=clonedproduct_conn,
-            query=f"""
+    fetch_pg_data_using_copy(
+        db=clonedproduct_conn.DATABASE_URL,
+        query=f"""
             select
               to_timestamp(p.event_at)::date as date,
               to_char(to_timestamp(p.event_at), 'MM') as month,
@@ -62,36 +61,9 @@ def fetch_product_usage(
               and date(p.created_at) >= '{from_date}'::date
               and date(p.created_at) <= '{to_date}'::date
             """,
-            tenant_id=tenant_id,
-            current_date=to_date,
-            chunksize=chunksize
-        )
-    else:
-        activities_data = clonedproduct_conn.run_query(
-            f"""
-            select
-              to_timestamp(p.event_at)::date as date,
-              to_char(to_timestamp(p.event_at), 'MM') as month,
-              to_char(to_timestamp(p.event_at), 'DD') as day,
-              to_char(to_timestamp(p.event_at), 'YYYY') as year,
-              p.event_id,
-              p.activity_type,
-              p.ip_addr as "IP",
-              p.product_id,
-              p.user_id,
-              p.environment,
-              p.source,
-              p.meta as meta,
-              pu.org_id::text as org_id
-            from
-              product_usage p
-              inner join product_usage_org pu on p.id = pu.product_usage_id
-            where
-              p.tenant_id = '{tenant_id}'
-              and date(p.created_at) >= '{from_date}'::date
-              and date(p.created_at) <= '{to_date}'::date
-            """, chunk_query=False
-        )
+        file_name=f"telemetry_{tenant_id}_{from_date}_and_{to_date}.csv"
+    )
+    activities_data = pd.read_csv(f"telemetry_{tenant_id}_{from_date}_and_{to_date}.csv")
     if activities_data is None:
         raise ConnectionError(f"""Query to fetch telemetry data didn't execute properly and hasn't returned anything. pls check the query.
 Here's the query for reference:
@@ -169,6 +141,10 @@ where
     for type in types:
         tmp_df = final_data[final_data["activity_type"]==type]
         upload_data(aws_secret=aws_secret, aws_access_key=aws_access_key, bucket_name=bucket_name, file_prefix=type, df=tmp_df)
+    del final_data
+    del org_data
+    del activities_data
+    os.remove(f"telemetry_{tenant_id}_{from_date}_and_{to_date}.csv")
 
 tenant_id=input("Enter tenant id: ")
 aws_secret=input("Enter aws secret: ")
