@@ -2,10 +2,7 @@ import json
 import time
 import s3_dump
 from datetime import datetime, timedelta
-from slack_sdk import WebClient
 
-
-input_js = json.loads("input_js.json")
 
 def check_to_sync(dt, frequency):
     timedeltas = {
@@ -42,7 +39,9 @@ def seconds_until_next_day():
 
 try:
     while True:
-        input_js = json.loads("input_js.json")
+        input_js = {}
+        with open("input_js.json", "r") as f:
+            input_js = json.loads(f.read())
         message = ""
         for tenant, sync_dets in input_js.items():
             for idx, sync_det in enumerate(sync_dets):
@@ -61,28 +60,16 @@ try:
         with open("input_js.json", "w+") as f:
             f.write(json.dumps(input_js))
 
-
-    client = WebClient(token=TOKEN)
-
-    if message!="":
-
-        response = client.chat_postMessage(
-            channel="C08JDFP82TC",
-            text=f"""Report for the date {datetime.now().strftime("%Y-%m-%d")}: \n {message}"""
-        )
-    else:
-        response = client.chat_postMessage(
-            channel="C08JDFP82TC",
-            text="No updates for today!"
-        )
-
-    assert response["ok"]
-
-    thread_sleep_time = seconds_until_next_day()
-    time.sleep(thread_sleep_time)
-
-
-
+        if message!="":
+            send_slack_alert(f"""Report for the date {datetime.now().strftime("%Y-%m-%d")}: \n {message}""")
+        else:
+            send_slack_alert(f"""No updates for today!""")
+        break
+        thread_sleep_time = seconds_until_next_day()
+        time.sleep(thread_sleep_time)
+except Exception as e:
+    send_slack_alert(f"""Error while creating report: {e}""")
+    raise e
 
 
 

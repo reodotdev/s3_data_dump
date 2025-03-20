@@ -47,8 +47,7 @@ class s3Interactions:
         try:
             response = self.s3_client.upload_file(file_to_upload, bucket, file_path)
         except Exception as e:
-            print(e)
-            return False
+            raise e
         return True
 
     def check_file_exists(self, file_path, file_name):
@@ -68,6 +67,9 @@ class s3Interactions:
             day = row["day"]
             date = f"{year}_{month}_{day}"
             df[((df["month"]==month) & (df["year"]==year) & (df["day"]==day))][[*select_cols]].to_csv(f"tmp_{file_prefix}.csv")
-            self.write_file(bucket=bucket_name, file_path=f"{year}/{month}/{file_prefix}_{date}.csv", file_to_upload=f"tmp_{file_prefix}.csv")
+            try:
+                self.write_file(bucket=bucket_name, file_path=f"{year}/{month}/{file_prefix}_{date}.csv", file_to_upload=f"tmp_{file_prefix}.csv")
+            except Exception as e:
+                os.remove(f"tmp_{file_prefix}.csv")
+                raise f"Error while uploading file {year}/{month}/{file_prefix}_{date}.csv: {e}"
             print(f"added {file_prefix} at : {year}/{month}/{file_prefix}_{date}.csv")
-            os.remove(f"tmp_{file_prefix}.csv")

@@ -141,8 +141,9 @@ def fetch_product_usage(
             org_data,
             on=["org_id"],
             how="left"
-        )
+        ).drop("org_id", axis=1)
         types = set(final_data["activity_type"].to_list())
+
         for type in types:
             tmp_df = final_data[final_data["activity_type"]==type]
             upload_data(aws_secret=aws_secret, aws_access_key=aws_access_key, bucket_name=bucket_name, file_prefix=type, df=tmp_df)
