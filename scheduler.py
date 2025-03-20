@@ -2,6 +2,7 @@ import json
 import time
 import s3_dump
 from datetime import datetime, timedelta
+from utils.common import send_slack_alert
 
 
 def check_to_sync(dt, frequency):
