@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 import subprocess
+import requests
 from datetime import datetime, timedelta
 
 def remove_non_empty_folder(folder_path):
@@ -56,3 +57,14 @@ def get_dates_between(start_date_str, end_date_str, date_format='%Y-%m-%d'):
 
     # Generate the list of dates using list comprehension
     return [(start_date + timedelta(days=i)).strftime(date_format) for i in range(delta.days + 1)]
+
+def send_slack_alert(message):
+    headers = {
+        'Content-type': 'application/json',
+    }
+
+    json_data = {
+        'text': message,
+    }
+
+    response = requests.post('https://hooks.slack.com/services/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', headers=headers, json=json_data)

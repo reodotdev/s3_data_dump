@@ -1,5 +1,4 @@
 from pandas.core.interchange.dataframe_protocol import DataFrame
-
 from utils.common import *
 from utils.s3_util import s3Interactions
 from utils.db_connections import *
@@ -34,8 +33,8 @@ def fetch_product_usage(
               inner join product_usage_org pu on p.id = pu.product_usage_id
             where
                 p.tenant_id = '{tenant_id}'
-                and date(p.created_at) >= '{from_date}'::date
-                and date(p.created_at) <= '{to_date}'::date
+                and to_timestamp(left(p.event_at::text, 10)::bigint)::date >= '{from_date}'::date
+                and to_timestamp(left(p.event_at::text, 10)::bigint)::date <= '{to_date}'::date
             """, chunk_query=False
         )
 
@@ -64,8 +63,8 @@ def fetch_product_usage(
                   inner join product_usage_org pu on p.id = pu.product_usage_id
                 where
                   p.tenant_id = '{tenant_id}'
-                  and date(p.created_at) >= '{from_date}'::date
-                  and date(p.created_at) <= '{to_date}'::date
+                  and to_timestamp(left(p.event_at::text, 10)::bigint)::date >= '{from_date}'::date
+                  and to_timestamp(left(p.event_at::text, 10)::bigint)::date <= '{to_date}'::date
                 """,
             file_name=f"telemetry_{tenant_id}_{from_date}_and_{to_date}.csv"
         )
@@ -92,8 +91,8 @@ def fetch_product_usage(
         inner join product_usage_org pu on p.id = pu.product_usage_id
     where
         p.tenant_id = '{tenant_id}'
-        and date(p.created_at) >= '{from_date}'::date
-        and date(p.created_at) <= '{to_date}'::date
+        and to_timestamp(left(p.event_at::text, 10)::bigint)::date >= '{from_date}'::date
+        and to_timestamp(left(p.event_at::text, 10)::bigint)::date <= '{to_date}'::date
         """)
         elif activities_data.shape[0] < data_len:
             raise ValueError(f"""All the data wasn't pulled from db. Pls check the connector.
@@ -118,8 +117,8 @@ def fetch_product_usage(
         inner join product_usage_org pu on p.id = pu.product_usage_id
     where
         p.tenant_id = '{tenant_id}'
-        and date(p.created_at) >= '{from_date}'::date
-        and date(p.created_at) <= '{to_date}'::date
+        and to_timestamp(left(p.event_at::text, 10)::bigint)::date >= '{from_date}'::date
+        and to_timestamp(left(p.event_at::text, 10)::bigint)::date <= '{to_date}'::date
         """)
         else:
             print("activities data pulled correctly!")
