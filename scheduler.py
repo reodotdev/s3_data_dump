@@ -64,7 +64,6 @@ try:
             send_slack_alert(f"""Report for the date {datetime.now().strftime("%Y-%m-%d")}: \n {message}""")
         else:
             send_slack_alert(f"""No updates for today!""")
-        break
         thread_sleep_time = seconds_until_next_day()
         time.sleep(thread_sleep_time)
 except Exception as e:
