@@ -48,11 +48,12 @@ try:
             for idx, sync_det in enumerate(sync_dets):
                 last_sync_dt = datetime.strptime("1980-01-01", "%Y-%m-%d") if sync_det["last_sync_at"] is None else datetime.strptime(sync_det["last_sync_at"], "%Y-%m-%d")
                 if check_to_sync(last_sync_dt, sync_det["frequency"]):
-                    data_extractor_func[sync_det["data"]][sync_det["storage_type"]](
+                    message+=data_extractor_func[sync_det["data"]][sync_det["storage_type"]](
                         tenant_id = tenant,
                         from_date = (last_sync_dt+timedelta(days=1)).strftime("%Y-%m-%d"),
                         to_date = (datetime.now()-timedelta(days=1)).strftime("%Y-%m-%d"),
                         bucket_name = sync_det["bucket_name"],
+                        messages=message
                         **sync_det["storage_api_keys"]
                     )
                     input_js[tenant][idx]["last_sync_at"] = (datetime.now()-timedelta(days=1)).strftime("%Y-%m-%d")

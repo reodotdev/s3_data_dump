@@ -16,6 +16,7 @@ def fetch_product_usage(
         aws_secret,
         aws_access_key,
         bucket_name,
+        messages,
         chunksize=10000,
         org_filter_chunksize = 1000):
     date_list = get_dates_between(from_date, to_date)
@@ -24,22 +25,23 @@ def fetch_product_usage(
         print(f"Processing data for the date: {date}")
         from_date = date
         to_date = date
-        data_len_df = clonedproduct_conn.run_query(
-            f"""
-            select
-              count(1) as tc
-            from
-              product_usage p
-              inner join product_usage_org pu on p.id = pu.product_usage_id
-            where
-                p.tenant_id = '{tenant_id}'
-                and to_timestamp(left(p.event_at::text, 10)::bigint)::date >= '{from_date}'::date
-                and to_timestamp(left(p.event_at::text, 10)::bigint)::date <= '{to_date}'::date
-            """, chunk_query=False
-        )
 
-        data_len = data_len_df["tc"].to_list()[0]
-        print(f"extraction length: {data_len}")
+        #data_len_df = clonedproduct_conn.run_query(
+        #    f"""
+        #    select
+        #      count(1) as tc
+        #    from
+        #      product_usage p
+        #      inner join product_usage_org pu on p.id = pu.product_usage_id
+        #    where
+        #        p.tenant_id = '{tenant_id}'
+        #        and to_timestamp(left(p.event_at::text, 10)::bigint)::date >= '{from_date}'::date
+        #        and to_timestamp(left(p.event_at::text, 10)::bigint)::date <= '{to_date}'::date
+        #    """, chunk_query=False
+        #)
+
+        #data_len = data_len_df["tc"].to_list()[0]
+        #print(f"extraction length: {data_len}")
         activities_data = None
         fetch_pg_data_using_copy(
             db=clonedproduct_conn.DATABASE_URL,
@@ -69,6 +71,7 @@ def fetch_product_usage(
             file_name=f"telemetry_{tenant_id}_{from_date}_and_{to_date}.csv"
         )
         activities_data = pd.read_csv(f"telemetry_{tenant_id}_{from_date}_and_{to_date}.csv")
+        data_len = activities_data.shape[0]
         if activities_data is None:
             raise ConnectionError(f"""Query to fetch telemetry data didn't execute properly and hasn't returned anything. pls check the query.
     Here's the query for reference:
@@ -152,6 +155,8 @@ def fetch_product_usage(
         del activities_data
         os.remove(f"telemetry_{tenant_id}_{from_date}_and_{to_date}.csv")
         print("Added data for date: ", date)
+        messages+= f'\nAdded data for date: {date}. # of records: {data_len}'
+    return messages
 
 #tenant_id=input("Enter tenant id: ")
 #aws_secret=input("Enter aws secret: ")
